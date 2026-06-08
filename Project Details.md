@@ -51,32 +51,10 @@ Allows administrators to monitor users and fraud cases.
 
 ---
 
-## 5. Use Case Diagram Submission
-
-### Actors
-
-- User
-- Admin
-- AI Fraud Detection System
-
-### Use Cases
-
-- Register User
-- Submit Aadhaar Details
-- Verify Aadhaar Information
-- Detect Fraudulent Activities
-- Generate Fraud Alerts
-- View Reports
-- Manage User Records
-- Monitor System Activities
-
-### Description
-
-The user submits Aadhaar information through the system. The AI Fraud Detection Engine analyzes the data and identifies suspicious activities. If fraud is detected, alerts are generated and sent to the administrator. The administrator can review reports, monitor activities, and take necessary actions to prevent fraud.
-
+ 
 ---
 
-## 6. Table List
+## 5. Table List
 
 ### User Table
 
