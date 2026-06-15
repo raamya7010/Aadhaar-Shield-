@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Result Page</h2>
+
+<p>Submitted user details and fraud analysis result will be shown here.</p>
+
+<hr>
+
+{% if result %}
+    <h3>Analysis Result:</h3>
+
+    <p><b>Name:</b> {{ result[0] }}</p>
+    <p><b>Aadhaar:</b> {{ result[1] }}</p>
+    <p><b>Mobile:</b> {{ result[2] }}</p>
+
+    <p><b>Status:</b> 
+        {% if result[3] == "Fraud" %}
+            <span style="color:red;">🔴 Fraud Detected</span>
+        {% else %}
+            <span style="color:green;">🟢 Safe User</span>
+        {% endif %}
+    </p>
+{% else %}
+    <p>No result found.</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Aadhaar Fraud Detection System</h2>
+
+<form method="POST" action="/submit">
+
+    Full Name:<br>
+    <input type="text" name="name"><br><br>
+
+    Aadhaar Number:<br>
+    <input type="text" name="aadhaar" maxlength="12"><br><br>
+
+    Mobile Number:<br>
+    <input type="text" name="mobile" maxlength="10"><br><br>
+
+    <button type="submit">Submit</button>
+
+</form>
+{% endblock %}
