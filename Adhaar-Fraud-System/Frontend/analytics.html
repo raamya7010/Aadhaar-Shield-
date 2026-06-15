@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Analytics Dashboard</h1>
+
+<h3>Safe Users: {{ safe }}</h3>
+<h3>Fraud Users: {{ fraud }}</h3>
+
+<hr>
+
+<canvas id="myChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById("myChart"), {
+    type: 'bar',
+    data: {
+        labels: ["Safe", "Fraud"],
+        datasets: [{
+            label: "Users Count",
+            data: [{{ safe }}, {{ fraud }}],
+            backgroundColor: ["green", "red"]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        }
+    }
+});
+</script>
+
+{% endblock %}
