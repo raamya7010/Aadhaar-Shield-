@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Analytics Dashboard</h1>
+
+<div style="display:flex; gap:20px; margin-bottom:20px;">
+
+    <div style="
+    background:green;
+    color:white;
+    padding:20px;
+    border-radius:10px;
+    width:180px;
+    text-align:center;">
+        <h3>Safe Users</h3>
+        <h2>{{ safe }}</h2>
+    </div>
+
+    <div style="
+    background:red;
+    color:white;
+    padding:20px;
+    border-radius:10px;
+    width:180px;
+    text-align:center;">
+        <h3>Fraud Users</h3>
+        <h2>{{ fraud }}</h2>
+    </div>
+
+</div>
+<hr>
+
+<div style="height:400px; width:100%;">
+    <canvas id="myChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById("myChart"), {
+    type: 'bar',
+    data: {
+        labels: ["Safe", "Fraud"],
+        datasets: [{
+            label: "Users Count",
+            data: [{{ safe }}, {{ fraud }}],
+            backgroundColor: ["green", "red"]
+        }]
+    },
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: false
+        }
+    }
+}
+});
+</script>
+
+{% endblock %}

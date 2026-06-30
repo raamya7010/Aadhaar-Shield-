@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 style="text-align:center;">
+    Fraud Analysis Result
+</h2>
+
+<p style="text-align:center;">
+    Submitted user details and fraud analysis result will be shown here.
+</p>
+
+<hr>
+
+{% if result %}
+
+<div style="
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0px 0px 10px lightgray;
+width:450px;
+margin:60px auto;
+">
+
+    <h3>Analysis Result</h3>
+
+    <p><b>Name:</b> {{ result[0] }}</p>
+
+    <p><b>Aadhaar:</b> {{ result[1] }}</p>
+
+    <p><b>Mobile:</b> {{ result[2] }}</p>
+
+    <p><b>Status:</b></p>
+
+    {% if result[3] == "Fraud" %}
+
+    <div style="
+    background:#ffe6e6;
+    padding:10px;
+    border-radius:8px;
+    ">
+        <span style="
+        color:red;
+        font-size:22px;
+        font-weight:bold;
+        ">
+            🔴 Fraud Detected
+        </span>
+    </div>
+
+    {% else %}
+
+    <div style="
+    background:#e8ffe8;
+    padding:10px;
+    border-radius:8px;
+    ">
+        <span style="
+        color:green;
+        font-size:22px;
+        font-weight:bold;
+        ">
+            🟢 Safe User
+        </span>
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% else %}
+
+<p style="text-align:center;">
+    No result found.
+</p>
+
+{% endif %}
+
+{% endblock %}
