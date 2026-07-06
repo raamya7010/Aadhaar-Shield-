@@ -1,8 +1,7 @@
 import mysql.connector
-from flask import Flask, render_template, request,redirect
-
+from flask import Flask, render_template, request, redirect, Response
 import csv
-from flask import Response
+from geopy.geocoders import Nominatim
 
 app = Flask(__name__, template_folder="../Frontend")
 
@@ -15,8 +14,21 @@ db = mysql.connector.connect(
 )
 
 cursor = db.cursor(buffered=True)
+
+# GLOBAL geolocator (FIXED)
+geolocator = Nominatim(user_agent="aadhaar_fraud_system")
+
+
 @app.route('/')
 def home():
+    return redirect('/login')
+
+@app.route('/login')
+def login():
+    return render_template("login.html")
+
+@app.route('/index')
+def index():
     return render_template("index.html")
 
 @app.route('/submit', methods=['POST'])
@@ -26,83 +38,112 @@ def submit():
     mobile = request.form['mobile']
     ip_address = request.remote_addr
 
-    print("Name:", name)
-    print("Aadhaar:", aadhaar)
-    print("Mobile:", mobile)
+    latitude = request.form['latitude']
+    longitude = request.form['longitude']
 
+    location_name = "Unknown"
+
+    # GPS → Location convert
+    if latitude and longitude:
+        try:
+            location = geolocator.reverse(f"{latitude}, {longitude}")
+
+            if location:
+                address = location.raw.get("address", {})
+
+                city = (
+                    address.get("city")
+                    or address.get("town")
+                    or address.get("village")
+                    or ""
+                )
+
+                state = address.get("state", "")
+
+                if city and state:
+                    location_name = f"{city}, {state}"
+                elif state:
+                    location_name = state
+
+        except Exception as e:
+            location_name = "Unknown"
+
+    # Risk logic
     risk_score = 0
 
-    # Duplicate check
     cursor.execute("SELECT * FROM users WHERE aadhaar = %s", (aadhaar,))
     existing_user = cursor.fetchone()
 
     if existing_user:
         risk_score += 50
 
-    # Rule 1: suspicious pattern
     if aadhaar.startswith("123"):
         risk_score += 30
 
-    # Rule 2: mobile validation
     if len(mobile) != 10:
         risk_score += 20
 
-    # status MUST always be defined
     if risk_score == 0:
         status = "Safe"
     else:
         status = "Fraud"
 
-    # Save only if NOT duplicate
-    sql = "INSERT INTO users (name, aadhaar, mobile, risk_score, status, ip_address) VALUES (%s, %s, %s, %s, %s, %s)"
-    val = (name, aadhaar, mobile, risk_score, status, ip_address)
+    # Insert DB
+    sql = """
+    INSERT INTO users
+    (name, aadhaar, mobile, risk_score, status, ip_address, latitude, longitude, location)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    val = (
+        name,
+        aadhaar,
+        mobile,
+        risk_score,
+        status,
+        ip_address,
+        latitude,
+        longitude,
+        location_name
+    )
 
     cursor.execute(sql, val)
     db.commit()
-    # Final result
-    if risk_score == 0:
-        result = "Safe (Risk: 0%)"
-    elif risk_score >= 80:
-        result = f"Fraud Suspected - HIGH RISK ({risk_score}%)"
-    else:
-        result = f"Fraud Suspected (Risk: {risk_score}%)"
 
     return render_template(
-    "result.html",
-    result=[name, aadhaar, mobile, status],
-    risk=risk_score
+        "result.html",
+        result=[name, aadhaar, mobile, status],
+        risk=risk_score
     )
+
+
 @app.route('/dashboard')
 def dashboard():
     aadhaar = request.args.get('aadhaar')
     name = request.args.get('name')
 
     if aadhaar:
-        cursor.execute(
-            "SELECT * FROM users WHERE aadhaar = %s",
-            (aadhaar,)
-    )
+        cursor.execute("SELECT * FROM users WHERE aadhaar = %s", (aadhaar,))
 
     elif name:
-        cursor.execute(
-            "SELECT * FROM users WHERE name LIKE %s",
-            ("%" + name + "%",)
-    )
+        cursor.execute("SELECT * FROM users WHERE name LIKE %s", ("%" + name + "%",))
 
     else:
-        cursor.execute("SELECT * FROM users")
+        cursor.execute("SELECT id, name, aadhaar, mobile, created_at, risk_score, status, ip_address, latitude, longitude, location FROM users")
 
     users = cursor.fetchall()
 
     total_users = len(users)
-
     safe_users = 0
     fraud_users = 0
+
+    status_index = 6
 
     for user in users:
         print(user)
 
-        if user[6] == "Safe":
+        # FIXED INDEX (status column)
+        if user[status_index] == "Safe":
             safe_users += 1
         else:
             fraud_users += 1
@@ -114,12 +155,15 @@ def dashboard():
         safe_users=safe_users,
         fraud_users=fraud_users
     )
+
+
 @app.route('/delete/<int:id>')
 def delete_user(id):
     cursor.execute("DELETE FROM users WHERE id = %s", (id,))
     db.commit()
+    return redirect('/dashboard')
 
-    return redirect('/dashboard')  
+
 @app.route('/analytics')
 def analytics():
     cursor.execute("SELECT status FROM users")
@@ -134,21 +178,25 @@ def analytics():
         else:
             fraud += 1
 
-    return render_template("analytics.html", safe=safe, fraud=fraud)  
+    return render_template("analytics.html", safe=safe, fraud=fraud)
+
+
 @app.route('/export')
 def export():
     cursor.execute("SELECT * FROM users")
     data = cursor.fetchall()
 
     def generate():
-        yield "ID,Name,Aadhaar,Mobile,Time,Risk,Status,IP\n"
+        yield "ID,Name,Aadhaar,Mobile,Risk,Status,IP\n"
         for row in data:
-            yield f"{row[0]},{row[1]},{row[2]},{row[3]},{row[4]},{row[5]},{row[6]},{row[7]}\n"
+            yield f"{row[0]},{row[1]},{row[2]},{row[3]},{row[5]},{row[6]},{row[7]}\n"
 
-    return Response(generate(), mimetype="text/csv", headers={"Content-Disposition":"attachment;filename=users.csv"})
+    return Response(generate(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment;filename=users.csv"})
+
+
 @app.route('/alerts')
 def alerts():
-
     cursor.execute("SELECT * FROM users WHERE risk_score >= 60")
     high_risk = cursor.fetchall()
 
@@ -161,7 +209,6 @@ def alerts():
         medium_risk=medium_risk
     )
 
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-    
