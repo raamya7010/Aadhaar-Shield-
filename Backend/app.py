@@ -29,7 +29,7 @@ def login():
 
 @app.route('/index')
 def index():
-    return render_template("index.html")
+    return render_template("index.html",active_page="home")
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -113,7 +113,8 @@ def submit():
     return render_template(
         "result.html",
         result=[name, aadhaar, mobile, status],
-        risk=risk_score
+        risk=risk_score,
+        active_page="result"
     )
 
 
@@ -136,6 +137,7 @@ def dashboard():
     total_users = len(users)
     safe_users = 0
     fraud_users = 0
+    fraud_rate = 0
 
     status_index = 6
 
@@ -148,12 +150,17 @@ def dashboard():
         else:
             fraud_users += 1
 
+    if total_users > 0:
+        fraud_rate = round((fraud_users / total_users) * 100, 1)
+
     return render_template(
         "dashboard.html",
         users=users,
         total_users=total_users,
         safe_users=safe_users,
-        fraud_users=fraud_users
+        fraud_users=fraud_users,
+        fraud_rate=fraud_rate,
+        active_page="dashboard"
     )
 
 
@@ -178,7 +185,7 @@ def analytics():
         else:
             fraud += 1
 
-    return render_template("analytics.html", safe=safe, fraud=fraud)
+    return render_template("analytics.html", safe=safe, fraud=fraud,  active_page="analytics")
 
 
 @app.route('/export')
@@ -206,7 +213,8 @@ def alerts():
     return render_template(
         "alerts.html",
         high_risk=high_risk,
-        medium_risk=medium_risk
+        medium_risk=medium_risk,
+        active_page="alerts"
     )
 
 
