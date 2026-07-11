@@ -1,21 +1,22 @@
 import os
-import mysql.connector
+import psycopg
 from flask import Flask, render_template, request, redirect, Response
 import csv
 from geopy.geocoders import Nominatim
 
 app = Flask(__name__, template_folder="../Frontend")
 
-# MySQL connection
-db = mysql.connector.connect(
+# PostgreSQL Connection (Supabase)
+
+db = psycopg.connect(
     host=os.getenv("DB_HOST"),
-    port=int(os.getenv("DB_PORT")),
+    port=os.getenv("DB_PORT"),
+    dbname=os.getenv("DB_NAME"),
     user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAME")
+    password=os.getenv("DB_PASSWORD")
 )
 
-cursor = db.cursor(buffered=True)
+cursor = db.cursor()
 
 # GLOBAL geolocator (FIXED)
 geolocator = Nominatim(user_agent="aadhaar_fraud_system")
@@ -132,7 +133,7 @@ def dashboard():
         cursor.execute("SELECT * FROM users WHERE name LIKE %s", ("%" + name + "%",))
 
     else:
-        cursor.execute("SELECT id, name, aadhaar, mobile, created_at, risk_score, status, ip_address, latitude, longitude, location FROM users")
+        cursor.execute("SELECT id, name, aadhaar, mobile, time, risk_score, status, ip_address, latitude, longitude, location FROM users")
 
     users = cursor.fetchall()
 
