@@ -41,8 +41,11 @@ def submit():
     mobile = request.form['mobile']
     ip_address = request.remote_addr
 
-    latitude = request.form['latitude']
-    longitude = request.form['longitude']
+    latitude = request.form.get("latitude") 
+    longitude = request.form.get("longitude") 
+
+    latitude = float(latitude) if latitude not in (None, "") else None
+    longitude = float(longitude) if longitude not in (None, "") else None
 
     location_name = "Unknown"
 
@@ -97,7 +100,11 @@ def submit():
     (name, aadhaar, mobile, risk_score, status, ip_address, latitude, longitude, location)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
-
+    
+    # Handle empty GPS values
+    latitude = float(latitude) if latitude else None
+    longitude = float(longitude) if longitude else None
+    
     val = (
         name,
         aadhaar,
