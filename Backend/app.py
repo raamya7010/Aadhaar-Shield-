@@ -8,15 +8,14 @@ app = Flask(__name__, template_folder="../Frontend")
 
 # PostgreSQL Connection (Supabase)
 
-db = psycopg.connect(
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT"),
-    dbname=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD")
-)
-
-cursor = db.cursor()
+def get_db():
+    return psycopg.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD")
+    )
 
 # GLOBAL geolocator (FIXED)
 geolocator = Nominatim(user_agent="aadhaar_fraud_system")
@@ -36,6 +35,9 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    db = get_db()
+    cursor = db.cursor() 
+
     name = request.form['name']
     aadhaar = request.form['aadhaar']
     mobile = request.form['mobile']
@@ -120,6 +122,9 @@ def submit():
     cursor.execute(sql, val)
     db.commit()
 
+    cursor.close()
+    db.close()
+
     return render_template(
         "result.html",
         result=[name, aadhaar, mobile, status],
@@ -130,6 +135,11 @@ def submit():
 
 @app.route('/dashboard')
 def dashboard():
+
+    db = get_db()
+    cursor = db.cursor()
+
+
     aadhaar = request.args.get('aadhaar')
     name = request.args.get('name')
 
@@ -163,6 +173,9 @@ def dashboard():
     if total_users > 0:
         fraud_rate = round((fraud_users / total_users) * 100, 1)
 
+    cursor.close()
+    db.close()
+ 
     return render_template(
         "dashboard.html",
         users=users,
@@ -176,13 +189,23 @@ def dashboard():
 
 @app.route('/delete/<int:id>')
 def delete_user(id):
+
+    db = get_db()
+    cursor = db.cursor()
+
     cursor.execute("DELETE FROM users WHERE id = %s", (id,))
     db.commit()
+
+    cursor.close()
+    db.close()
+
     return redirect('/dashboard')
 
 
 @app.route('/analytics')
 def analytics():
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("SELECT status FROM users")
     data = cursor.fetchall()
 
@@ -195,11 +218,15 @@ def analytics():
         else:
             fraud += 1
 
+    cursor.close()
+    db.close()
     return render_template("analytics.html", safe=safe, fraud=fraud,  active_page="analytics")
 
 
 @app.route('/export')
 def export():
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM users")
     data = cursor.fetchall()
 
@@ -207,18 +234,25 @@ def export():
         yield "ID,Name,Aadhaar,Mobile,Risk,Status,IP\n"
         for row in data:
             yield f"{row[0]},{row[1]},{row[2]},{row[3]},{row[5]},{row[6]},{row[7]}\n"
-
+    
+    cursor.close()
+    db.close()
     return Response(generate(), mimetype="text/csv",
                     headers={"Content-Disposition": "attachment;filename=users.csv"})
 
 
 @app.route('/alerts')
 def alerts():
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM users WHERE risk_score >= 60")
     high_risk = cursor.fetchall()
 
     cursor.execute("SELECT * FROM users WHERE risk_score >= 30 AND risk_score < 60")
     medium_risk = cursor.fetchall()
+    
+    cursor.close()
+    db.close()
 
     return render_template(
         "alerts.html",
